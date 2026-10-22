@@ -1,0 +1,11 @@
+node_modules/
+.npm-cache/
+.expo/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+android/
+ios/
+*.tsbuildinfo

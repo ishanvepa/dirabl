@@ -1,0 +1,1 @@
+{"name":"dirabl-server","private":true,"type":"module","scripts":{"dev":"tsx watch --env-file=.env src/index.ts","build":"tsc","start":"node --env-file=.env dist/server/src/index.js"},"dependencies":{"express":"^5.1.0","openai":"latest","zod":"^4.0.0","dotenv":"latest"},"devDependencies":{"@types/express":"^5.0.0","tsx":"latest"}}
