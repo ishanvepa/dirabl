@@ -16,3 +16,7 @@ Validation: npm run check passed (TypeScript, ESLint, 4 SQLite tests). Expo SDK 
 
 ## Phase 2
 Added native speech adapter, language/model checks, denial handling, Android download action, interim/final buffer, foreground stop, delayed final capture and timeout retention. Manual input and unsaved-leave guard remain available. npm run check passed: TypeScript, ESLint, 8 tests (including mocked native events). Real-device tests are pending in docs/DEVICE_TESTS.md; recording before Finish is memory-only.
+
+## Phase 4
+Added bounded connectivity lookup at Finish, default-off automatic synthesis with persistent consent, one-use in-memory automatic tickets (never a reconnect listener), transcript editing/cancel/leave guards and stale story notices. Existing SQL attempt/revision conditions protect edits and restart recovery never resends.
+Validation: npm run check passed (TypeScript, ESLint, 23 tests), including the full persisted offline -> manual synthesis loop, online auto eligibility, one-use tickets, duplicate taps, mid-flight edits and six retryable failure cases. The physical-device demo remains pending.

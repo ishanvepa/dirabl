@@ -3,7 +3,7 @@ export function createSynthesisClient(url:string|undefined,request:typeof fetch=
   return async (input:SynthesisRequest)=>{
     if(!url) throw new Error('Synthesis is not configured. Set EXPO_PUBLIC_SYNTHESIS_API_URL in the development build.');
     const parsed=new URL(url);
-    const local=/^(localhost|127\.0\.0\.1|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(parsed.hostname);
+    const local=/^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/.test(parsed.hostname);
     if(parsed.protocol!=='https:' && !(parsed.protocol==='http:' && local)) throw new Error('Synthesis requires HTTPS outside your local development network.');
     RequestSchema.parse(input);
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);

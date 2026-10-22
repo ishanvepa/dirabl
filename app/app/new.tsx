@@ -6,8 +6,10 @@ import { useRepositories } from '../src/services/database/context';
 import { Body, Button, Heading, Notice, Screen, styles } from '../src/components/ui';
 import { ExpoSpeechTranscriber } from '../src/services/speech/ExpoSpeechTranscriber';
 import type { Availability } from '../src/services/speech/SpeechTranscriber';
+import {onlineAtFinish} from '../src/services/connectivity';
+import {finishEntry} from '../src/features/journal/finishEntry';
 export default function NewEntry() {
-  const {journal}=useRepositories();
+  const {journal,settings}=useRepositories();
   const [text,setText]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const [active,setActive]=useState(false),[interim,setInterim]=useState(''),[availability,setAvailability]=useState<Availability>();
   const speech=useRef<ExpoSpeechTranscriber|null>(null),textRef=useRef(''),saved=useRef(false),[didSave,setDidSave]=useState(false);
@@ -34,7 +36,7 @@ export default function NewEntry() {
     setBusy(true);
     try {
       const final=active ? await speech.current!.stop() : textRef.current;
-      const entry=await journal.createDraft({rawTranscript:final,offline:true});
+      const entry=await finishEntry(journal,settings,final,await onlineAtFinish());
       saved.current=true;setDidSave(true);
       setTimeout(()=>router.replace(`/entry/${entry.id}`),0);
     } catch(e) {setError(e instanceof Error ? e.message : 'Could not save. Your text is still here; please retry.');setBusy(false);}
