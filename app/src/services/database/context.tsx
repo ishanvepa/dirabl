@@ -5,5 +5,11 @@ import { JournalRepository } from './journalRepository';
 import { SettingsRepository } from './settingsRepository';
 export function useRepositories() {
   const db = useSQLiteContext();
-  return useMemo(() => ({journal: new JournalRepository(db,randomUUID),settings:new SettingsRepository(db)}),[db]);
+  return useMemo(
+    () => ({
+      journal: new JournalRepository(db, randomUUID),
+      settings: new SettingsRepository(db),
+    }),
+    [db],
+  );
 }

@@ -1,29 +1,29 @@
 {
-    "expo":  {
-                 "name":  "dirabl",
-                 "slug":  "dirabl",
-                 "scheme":  "dirabl",
-                 "version":  "1.0.0",
-                 "orientation":  "portrait",
-                 "userInterfaceStyle":  "light",
-                 "ios":  {
-                             "bundleIdentifier":  "com.dirabl.journal",
-                             "supportsTablet":  true
-                         },
-                 "android":  {
-                                 "package":  "com.dirabl.journal"
-                             },
-                 "plugins":  [
-                                 "expo-router",
-                                 "expo-sqlite",
-                                 "expo-status-bar",
-                                 [
-                                     "expo-speech-recognition",
-                                     {
-                                         "speechRecognitionPermission":  "Allow dirabl to transcribe speech on this device.",
-                                         "microphonePermission":  "Allow dirabl to use your microphone for on-device dictation."
-                                     }
-                                 ]
-                             ]
-             }
+  "expo": {
+    "name": "dirabl",
+    "slug": "dirabl",
+    "scheme": "dirabl",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.dirabl.journal",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.dirabl.journal"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-status-bar",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow dirabl to use your microphone for on-device dictation.",
+          "speechRecognitionPermission": "Allow dirabl to transcribe speech on this device."
+        }
+      ]
+    ]
+  }
 }

@@ -9,6 +9,8 @@ Use Node 22.16 or newer and npm. On Windows use `npm.cmd` / `npx.cmd` if PowerSh
 ```sh
 npm install
 npm run check
+cp app/.env.example app/.env
+# Edit the backend URL if using AI; DIRABL_ALLOW_LOCAL_HTTP=1 is only for development.
 npm run android -w app
 # macOS + Xcode:
 npm run ios -w app
@@ -16,6 +18,16 @@ npm start
 ```
 
 Native speech recognition requires an Expo **development build**, not Expo Go. Android development needs an Android SDK/JDK and an emulator or USB-debugging phone. iOS builds need macOS/Xcode or EAS Build. Prefer a real iOS 17+ / Android 13+ phone for speech acceptance tests.
+
+For EAS on a machine without native build tools, run from `app/`:
+
+```sh
+npx eas-cli build:configure
+npx eas-cli build --profile development --platform android
+# Or --platform ios, with Apple signing credentials and a registered device.
+```
+
+An Expo account and native signing setup are required. Install the resulting development build, then run `npm start` from the repository root and open its Metro development URL on the phone. The checked-in EAS profile is for internal development only. Its local HTTP permission must not be used for a release build. Native config reads `DIRABL_ALLOW_LOCAL_HTTP`; changing it requires rebuilding, not just restarting Metro.
 
 ## Persistence smoke test
 
@@ -43,3 +55,28 @@ The server calls Chat Completions with strict structured output and `store: fals
 This server is deliberately **local development only**: it binds to loopback/a private IP, caps requests at 6/minute/client and 100/day/process, disables SDK retries, and refuses `NODE_ENV=production`. These in-memory limits reset on restart and are not production authentication or spend controls. Do not port-forward or publish it. Public release requires TLS, authentication or attestation, durable per-user/global quotas and provider-side budget controls.
 
 API behavior was verified with mocked OpenAI responses; no server API key was available for a paid smoke test. Native acceptance steps are in [docs/DEVICE_TESTS.md](docs/DEVICE_TESTS.md).
+
+## Verification and remaining release work
+
+```sh
+npm run check                  # app/server/test TypeScript, ESLint, Vitest
+npm run build -w server        # backend compilation
+npm exec -w app -- expo install --check
+npm exec -w app -- expo export --platform android --platform ios --output-dir dist
+```
+
+Unit/integration tests use an actual SQLite engine (sql.js) and mocked native recognizer/OpenAI events. They exercise save/reopen, settings defaults, save-before-request, offline manual synthesis, auto eligibility, timeout/network/API errors, duplicate taps, mid-flight edits, stale response rejection and interrupted-request recovery. Both mobile Hermes bundles exported successfully. No physical-device or native binary build has been verified here; run every step in the device checklist before accepting the native MVP.
+
+Recording is foreground-only, en-US. Until Finish, text is held in memory; a force-kill can lose an unfinished entry. A stop timeout retains the latest interim text, which needs review. Consecutive identical native final events are deduplicated; test intentional repetitions on target devices. Library and saved entries work without a backend, account or internet. Journal content is plain text, never interpreted as HTML.
+
+Before public release:
+
+- Complete real iOS/Android microphone, offline-model, airplane-mode, long-dictation, accessibility and restart tests.
+- Run a real-key smoke test with the configured model and review provider privacy/retention disclosure.
+- Replace the development backend restriction with TLS, defensible client authentication/attestation, durable abuse limits and usage/spend controls.
+- Add and verify SQLCipher encryption with platform-backed keys; SQLite here is not separately encrypted.
+- Resolve upstream dependency advisories. After `npm audit fix`, npm reports 19 high-severity findings propagated through Expo/Metro tooling, rooted in `braces` ([advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)) and `node-forge` ([advisory](https://github.com/advisories/GHSA-86w9-cpqp-85rv)). npm's suggested forced fix downgrades Expo to SDK 44 and breaks the supported native dependency set; it was not applied. Keep development servers on trusted networks and re-audit before release.
+
+The implementation stops at Phase 5. HandFonted, writing-style imitation, backup/import, accounts and sync are not implemented.
+
+API implementation references: [Expo SQLite](https://docs.expo.dev/versions/latest/sdk/sqlite/), [expo-speech-recognition](https://github.com/jamsch/expo-speech-recognition), [OpenAI structured output](https://developers.openai.com/api/docs/guides/structured-outputs), [GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna).

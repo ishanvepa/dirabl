@@ -1,0 +1,6 @@
+node_modules
+.npm-cache
+**/.expo
+**/dist
+package-lock.json
+BUILD_PLAN.md

@@ -1,28 +1,31 @@
 {
-    "name": "dirabl-workspace",
-    "private": true,
-    "workspaces": [
-        "app",
-        "server"
-    ],
-    "scripts": {
-        "typecheck": "tsc --noEmit -p app && tsc --noEmit -p server",
-        "lint": "eslint app server tests",
-        "test": "vitest run",
-        "check": "npm run typecheck && npm run lint && npm test",
-        "start": "npm run start -w app",
-        "server": "npm run dev -w server"
-    },
-    "devDependencies": {
-        "@types/node": "^22.0.0",
-        "@types/react": "^19.3.0",
-        "@types/sql.js": "^1.4.11",
-        "@types/supertest": "^7.2.1",
-        "eslint": "^9.0.0",
-        "sql.js": "^1.15.1",
-        "supertest": "^7.3.1",
-        "typescript": "latest",
-        "typescript-eslint": "latest",
-        "vitest": "latest"
-    }
+  "name": "dirabl-workspace",
+  "private": true,
+  "workspaces": [
+    "app",
+    "server"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p app && tsc --noEmit -p server && tsc -p tsconfig.tests.json",
+    "lint": "eslint app server shared tests",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "start": "npm run start -w app",
+    "server": "npm run dev -w server",
+    "format": "prettier --write app server shared tests *.json *.mjs README.md WORK_LOG.md docs/*.md"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.3.0",
+    "@types/sql.js": "^1.4.11",
+    "@types/supertest": "^7.2.1",
+    "eslint": "^9.0.0",
+    "prettier": "^3.9.10",
+    "sql.js": "^1.15.1",
+    "supertest": "^7.3.1",
+    "typescript": "latest",
+    "typescript-eslint": "latest",
+    "vitest": "latest"
+  },
+  "type": "module"
 }

@@ -1,22 +1,42 @@
-# Implementation checkpoints
+﻿# Implementation checkpoints
 
-## Phase 1
+## Phase 1 — SQLite foundation (`cd49f0d`)
 
-Created an Expo Router application, warm minimal UI, SQLite migration v1, parameterized repository and settings storage, and manual creation/library/detail loop. Repository tests use the real SQLite engine via sql.js, including database serialization/reopen, literal user text, empty validation, settings, revisions and stale synthesis writes.
+Created Expo Router, a minimal warm UI, migration v1, parameterized repositories, persistent settings and a working manual creation/library/detail loop. SQLite tests serialize/reopen a real SQLite database via sql.js, preserve literal user text and verify defaults and revision protections.
 
-Device launch/restart remains a manual acceptance test: no attached iOS or Android device is available in this environment.
+Checkpoint validation: TypeScript, ESLint and 4 tests passed. Expo SDK 58 package versions were aligned using Expo's compatibility checker. Native launch/restart remains a manual test.
 
-## Phase 3
+## Phase 2 — On-device dictation (`2ccf68b`)
 
-Added shared Zod contracts, local Express synthesis route, strict Chat Completions schema and versioned system prompt, normalized safe errors, request limits, timeout/no retries, mobile typed client, explicit cloud consent and Story/Transcript views. API secrets are server-only. Server refuses production startup and public bind addresses. No credentials were available; live paid API smoke testing was skipped.
+Added the genuine native adapter, locale/model checks, permission-denial handling, Android offline-model download, separate interim/final text, foreground stop, delayed-final capture, timeout retention and manual fallback. Unsaved-leave confirmation protects navigation.
 
-Validation: npm run check passed (TypeScript, ESLint, 15 tests). Tests cover request/output validation, normalization, metadata wrapping/mismatch, refusal, truncated/invalid output, rate limits, network failure and timeout.
+Checkpoint validation: TypeScript, ESLint and 8 tests passed, including mocked native events. Real-device airplane mode and long dictation are pending. Before Finish, text remains in memory.
 
-Validation: npm run check passed (TypeScript, ESLint, 4 SQLite tests). Expo SDK 58 dependency versions aligned with expo install --fix. Native launch/restart unverified.
+## Phase 3 — Backend and saved stories (`fca8802`)
 
-## Phase 2
-Added native speech adapter, language/model checks, denial handling, Android download action, interim/final buffer, foreground stop, delayed final capture and timeout retention. Manual input and unsaved-leave guard remain available. npm run check passed: TypeScript, ESLint, 8 tests (including mocked native events). Real-device tests are pending in docs/DEVICE_TESTS.md; recording before Finish is memory-only.
+Added shared Zod contracts, local Express route, strict Chat Completions output, versioned prompt, safe errors, limits, timeout/no retries, typed client, cloud consent and Story/Original Transcript views. Secrets remain server-only; public binding and production startup are disabled.
 
-## Phase 4
-Added bounded connectivity lookup at Finish, default-off automatic synthesis with persistent consent, one-use in-memory automatic tickets (never a reconnect listener), transcript editing/cancel/leave guards and stale story notices. Existing SQL attempt/revision conditions protect edits and restart recovery never resends.
-Validation: npm run check passed (TypeScript, ESLint, 23 tests), including the full persisted offline -> manual synthesis loop, online auto eligibility, one-use tickets, duplicate taps, mid-flight edits and six retryable failure cases. The physical-device demo remains pending.
+Checkpoint validation: TypeScript, ESLint and 15 tests passed. Request/output validation, normalization, metadata, refusal, incomplete output, HTTP failures and timeout were mocked. No server key was available for a live paid call.
+
+## Phase 4 — Offline policy and reliability (`e0d1d60`)
+
+Added bounded connectivity lookup at Finish, opt-in automatic synthesis, process-local single-use tickets, transcript editing with explicit save/cancel and stale-story notices. Tickets are created only by Finish; no reconnection listener submits entries. SQL attempt/revision guards reject stale writes. Startup resets interrupted requests to manual retry.
+
+Checkpoint validation: TypeScript, ESLint and 23 tests passed, covering the saved offline/manual loop, auto eligibility, duplicate taps, mid-flight edits and six failure/retry cases. Physical-device demo pending.
+
+## Phase 5 — Polish and delivery
+
+Added keyboard avoidance, accessible controls/status, loading/empty/error states, safe navigation, formatted source, test TypeScript checking, internal EAS development profile and opt-in native local-HTTP configuration. Fixed late speech-event overwrites, coalesced overlapping stop calls, protected current stories against accidental regeneration, and verified compiled backend ESM imports. README and device checklist document exact setup and release blockers.
+
+Final validation:
+
+- TypeScript for app, server and tests: passed.
+- ESLint: passed.
+- Vitest: 24 tests across 7 files passed.
+- Backend TypeScript build and compiled-module import: passed.
+- Expo SDK dependency compatibility check: passed.
+- Expo native config introspection: passed, including microphone/speech permissions and development local-HTTP settings.
+- Android and iOS Hermes bundle export: passed. This is not native binary compilation or a device test.
+- npm audit fix: compatible updates applied; 19 high-severity upstream findings remain in the Expo/Metro dependency graph. Forced SDK downgrade was not applied; see README.
+
+No Android SDK/adb or attached phone was available, and iOS native compilation needs macOS/EAS. Real-device recognition, native persistence, long dictation, interruption and accessibility acceptance remain pending in docs/DEVICE_TESTS.md. No API credentials were present. Production also needs TLS, authentication/attestation, durable quotas/spend controls, local encryption and dependency advisory resolution. No post-MVP features were implemented.
