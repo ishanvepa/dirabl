@@ -1,26 +1,28 @@
 {
-    "name":  "dirabl-workspace",
-    "private":  true,
-    "workspaces":  [
-                       "app",
-                       "server"
-                   ],
-    "scripts":  {
-                    "typecheck":  "tsc --noEmit -p app \u0026\u0026 tsc --noEmit -p server",
-                    "lint":  "eslint app server tests",
-                    "test":  "vitest run",
-                    "check":  "npm run typecheck \u0026\u0026 npm run lint \u0026\u0026 npm test",
-                    "start":  "npm run start -w app",
-                    "server":  "npm run dev -w server"
-                },
-    "devDependencies":  {
-                            "@types/node":  "^22.0.0",
-                            "@types/react":  "^19.3.0",
-                            "@types/sql.js":  "^1.4.11",
-                            "eslint":  "^9.0.0",
-                            "sql.js":  "^1.15.1",
-                            "typescript":  "latest",
-                            "typescript-eslint":  "latest",
-                            "vitest":  "latest"
-                        }
+    "name": "dirabl-workspace",
+    "private": true,
+    "workspaces": [
+        "app",
+        "server"
+    ],
+    "scripts": {
+        "typecheck": "tsc --noEmit -p app && tsc --noEmit -p server",
+        "lint": "eslint app server tests",
+        "test": "vitest run",
+        "check": "npm run typecheck && npm run lint && npm test",
+        "start": "npm run start -w app",
+        "server": "npm run dev -w server"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "@types/react": "^19.3.0",
+        "@types/sql.js": "^1.4.11",
+        "@types/supertest": "^7.2.1",
+        "eslint": "^9.0.0",
+        "sql.js": "^1.15.1",
+        "supertest": "^7.3.1",
+        "typescript": "latest",
+        "typescript-eslint": "latest",
+        "vitest": "latest"
+    }
 }

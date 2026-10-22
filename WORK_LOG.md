@@ -6,6 +6,12 @@ Created an Expo Router application, warm minimal UI, SQLite migration v1, parame
 
 Device launch/restart remains a manual acceptance test: no attached iOS or Android device is available in this environment.
 
+## Phase 3
+
+Added shared Zod contracts, local Express synthesis route, strict Chat Completions schema and versioned system prompt, normalized safe errors, request limits, timeout/no retries, mobile typed client, explicit cloud consent and Story/Transcript views. API secrets are server-only. Server refuses production startup and public bind addresses. No credentials were available; live paid API smoke testing was skipped.
+
+Validation: npm run check passed (TypeScript, ESLint, 15 tests). Tests cover request/output validation, normalization, metadata wrapping/mismatch, refusal, truncated/invalid output, rate limits, network failure and timeout.
+
 Validation: npm run check passed (TypeScript, ESLint, 4 SQLite tests). Expo SDK 58 dependency versions aligned with expo install --fix. Native launch/restart unverified.
 
 ## Phase 2
