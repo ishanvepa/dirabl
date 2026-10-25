@@ -11,7 +11,6 @@
     "test": "vitest run",
     "check": "yarn typecheck && yarn lint && yarn test",
     "start": "yarn workspace dirabl start",
-    "start:go": "yarn workspace dirabl start:go",
     "server": "yarn workspace dirabl-server dev",
     "format": "prettier --write app server shared tests *.json *.mjs README.md WORK_LOG.md docs/*.md"
   },

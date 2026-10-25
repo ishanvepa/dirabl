@@ -4,7 +4,7 @@ import { router, usePreventRemove } from 'expo-router';
 
 import { useRepositories } from '../src/services/database/context';
 import { Body, Button, Heading, Notice, Screen, styles } from '../src/components/ui';
-import { createSpeechTranscriber } from '../src/services/speech/createSpeechTranscriber';
+import { ExpoSpeechTranscriber } from '../src/services/speech/ExpoSpeechTranscriber';
 import type { Availability, SpeechTranscriber } from '../src/services/speech/SpeechTranscriber';
 import { onlineAtFinish } from '../src/services/connectivity';
 import { finishEntry } from '../src/features/journal/finishEntry';
@@ -35,42 +35,36 @@ export default function NewEntry() {
   });
   useEffect(() => {
     let disposed = false;
-    let unsubscribe: (() => void) | undefined;
-    void createSpeechTranscriber()
-      .then(async (transcriber) => {
-        if (disposed) {
-          transcriber.dispose();
-          return;
-        }
-        speech.current = transcriber;
-        unsubscribe = transcriber.subscribe((snapshot) => {
-          setText(snapshot.committedText);
-          textRef.current = snapshot.committedText;
-          setInterim(snapshot.interimText);
-          setActive(snapshot.active);
-          if (snapshot.message) setError(snapshot.message);
-        });
-        const result = await transcriber.checkAvailability('en-US');
-        if (!disposed) setAvailability(result);
+    const transcriber = new ExpoSpeechTranscriber();
+    speech.current = transcriber;
+    const unsubscribe = transcriber.subscribe((snapshot) => {
+      setText(snapshot.committedText);
+      textRef.current = snapshot.committedText;
+      setInterim(snapshot.interimText);
+      setActive(snapshot.active);
+      if (snapshot.message) setError(snapshot.message);
+    });
+    void transcriber
+      .checkAvailability('en-US')
+      .then((availability) => {
+        if (!disposed) setAvailability(availability);
       })
       .catch(() => {
         if (!disposed)
           setAvailability({
             available: false,
-            manualOnly: true,
-            reason:
-              'Could not initialize local dictation. Use a development build with speech support, or type below.',
+            reason: 'Could not check local speech support. You can type your entry.',
           });
       });
     const appState = AppState.addEventListener('change', (state) => {
       if (state !== 'active')
-        void speech.current?.stop().catch(() => setError('Dictation stopped. Review your text.'));
+        void transcriber.stop().catch(() => setError('Dictation stopped. Review your text.'));
     });
     return () => {
       disposed = true;
-      unsubscribe?.();
+      unsubscribe();
       appState.remove();
-      speech.current?.dispose();
+      transcriber.dispose();
       speech.current = null;
     };
   }, []);
@@ -120,12 +114,9 @@ export default function NewEntry() {
   return (
     <Screen>
       <Heading>What’s on your mind?</Heading>
-      {availability && !availability.manualOnly && (
-        <Body>
-          Dictation stays on this device. Microphone access is used only while this screen is
-          active.
-        </Body>
-      )}
+      <Body>
+        Dictation stays on this device. Microphone access is used only while this screen is active.
+      </Body>
       {availability?.reason && <Notice>{availability.reason}</Notice>}
       {availability?.canDownloadModel && (
         <Button
@@ -134,13 +125,11 @@ export default function NewEntry() {
           onPress={() => void download()}
         />
       )}
-      {availability && !availability.manualOnly && (
-        <Button
-          title={active ? 'Listening…' : 'Start Dictating'}
-          disabled={!availability?.available || busy || active}
-          onPress={() => void dictate()}
-        />
-      )}
+      <Button
+        title={active ? 'Listening…' : 'Start Dictating'}
+        disabled={!availability?.available || busy || active}
+        onPress={() => void dictate()}
+      />
       {active && <Notice>Listening on-device. Tap Finish Entry when you’re ready.</Notice>}
       <TextInput
         accessibilityLabel="Journal transcript"
@@ -152,7 +141,7 @@ export default function NewEntry() {
           textRef.current = value;
         }}
         style={styles.input}
-        placeholder={availability?.manualOnly ? 'Write here…' : 'Speak or write here…'}
+        placeholder="Speak or write here…"
       />
       {!!interim && (
         <Text accessibilityLiveRegion="polite" style={[styles.body, { fontStyle: 'italic' }]}>
@@ -160,9 +149,7 @@ export default function NewEntry() {
         </Text>
       )}
       {!!error && <Notice>{error}</Notice>}
-      {availability && !availability.manualOnly && (
-        <Button title="Open device Settings" onPress={() => void Linking.openSettings()} />
-      )}
+      <Button title="Open device Settings" onPress={() => void Linking.openSettings()} />
       <Button
         title={busy ? 'Please wait…' : 'Finish Entry'}
         disabled={busy || (!text.trim() && !interim.trim() && !active)}

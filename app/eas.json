@@ -1,6 +1,11 @@
 {
   "cli": { "version": ">= 16.0.0" },
   "build": {
+    "preview": {
+      "distribution": "internal",
+      "env": { "DIRABL_ALLOW_LOCAL_HTTP": "1" },
+      "android": { "buildType": "apk" }
+    },
     "development": {
       "developmentClient": true,
       "distribution": "internal",

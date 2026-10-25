@@ -6,38 +6,48 @@ An offline-first iOS/Android journal built with Expo Router, TypeScript and SQLi
 
 Use Node 22.16 or newer and Yarn Classic 1.22.22 (pinned in `package.json`). If Yarn is not installed, Node 22 ships Corepack: run `corepack enable`, then `corepack prepare yarn@1.22.22 --activate`. On Windows use `yarn.cmd` if PowerShell script execution is disabled.
 
+The repository uses Yarn workspaces and a single root `yarn.lock`; install from the repository root and commit the lockfile after dependency changes. Use `yarn run check` for the full validation suite; bare `yarn check` is Yarn Classic's own command.
+
 ```sh
 yarn install --frozen-lockfile
 yarn run check
 cp app/.env.example app/.env
-# Edit the backend URL if using AI; DIRABL_ALLOW_LOCAL_HTTP=1 is only for development.
-yarn workspace dirabl android
-# macOS + Xcode:
-yarn workspace dirabl ios
+```
+
+### Test on an iPhone with EAS cloud builds
+
+Use an Expo account, an active Apple Developer membership, and a registered iPhone (start with iOS 17+). Install the EAS CLI with `yarn global add eas-cli` if needed. From `app/`, run the one-time account/project/device setup:
+
+```sh
+eas login
+eas init
+eas device:create
+```
+
+Follow the registration link in Safari on your iPhone. If the CLI cannot write the EAS project ID into the dynamic app config, add the supplied ID as `extra.eas.projectId` in `app/app.config.ts`. Then build the standalone internal testing app:
+
+```sh
+eas build --platform ios --profile preview
+```
+
+Allow EAS to manage signing credentials when prompted. Open the finished build's install link on your registered iPhone. Enable Settings ? Privacy & Security ? Developer Mode, restart and confirm if prompted. The `preview` profile bundles the JavaScript inside the app, so it can launch and reopen saved entries in airplane mode without your computer or Metro. Verify offline dictation with a supported installed language model using the device checklist. Code changes require another preview build. This is an internal testing build, not a production deployment.
+
+For fast code iteration, build the `development` profile instead:
+
+```sh
+# From app/:
+eas build --platform ios --profile development
+# Then from the repository root:
 yarn start
 ```
 
-Native speech recognition requires an Expo **development build**, not Expo Go. Android development needs an Android SDK/JDK and an emulator or USB-debugging phone. iOS builds need macOS/Xcode or EAS Build. Prefer a real iOS 17+ / Android 13+ phone for speech acceptance tests.
+Install that build and open the Metro QR/development URL on your phone, with the phone and computer on the same Wi-Fi. Development builds load JavaScript from Metro; use the `preview` profile for fully offline force-quit/relaunch tests. Both profiles use the same bundle identifier, so they replace each other on the phone. Avoid uninstalling the app if you want to keep its local journal; no backup/import is implemented.
 
-The repository uses Yarn workspaces and a single root `yarn.lock`; install from the repository root. Commit `yarn.lock` after dependency changes, and use `yarn install --frozen-lockfile` in CI/build verification. Run the full validation suite with `yarn run check`; Yarn Classic reserves bare `yarn check` for its own dependency check. Do not generate an npm lockfile alongside it.
+Native speech recognition uses a custom native build. Manual typing remains available for denied permissions and unsupported devices/locales. Android 13+ testing and optional local native builds remain available with `yarn workspace dirabl android`; local iOS builds on macOS use `yarn workspace dirabl ios`.
 
-### Quick preview in Expo Go
+Both checked-in EAS profiles allow local HTTP only for testing. Native config reads `DIRABL_ALLOW_LOCAL_HTTP`; do not carry this setting into a release profile. For optional synthesis in preview builds, set `EXPO_PUBLIC_SYNTHESIS_API_URL` in the EAS build environment (or in the preview profile's `env`) to your computer's reachable private LAN URL before building; ignored local `.env` files are not uploaded to EAS. Never place the OpenAI key in an EAS mobile-build variable. A preview build's URL is embedded and requires rebuilding to change. The backend still needs to be running and reachable for synthesis; local journaling does not.
 
-From the repository root, run `yarn start:go` (or `yarn.cmd start:go` in PowerShell), then scan the QR code with your phone. Install an Expo Go version compatible with this project's Expo SDK 58. No custom native build is required for this mode.
-
-Expo Go uses manual text entry. New Entry hides microphone/model-download/settings controls and explains that voice dictation requires the development build. Library, local persistence, transcript editing, consent and optional backend synthesis use the same code. No new dependencies or second app project are needed. The speech module is loaded only outside Expo Go.
-
-Expo Go and the standalone dirabl development app have separate journal storage. Custom native network settings do not change Expo Go; if synthesis cannot reach your local backend, verify LAN access and the host app's network permissions. Expo Go is a preview, not validation of native speech or release/offline cold-start behavior. Use `yarn start` for the full development build.
-
-For EAS on a machine without native build tools, install the CLI with `yarn global add eas-cli` if needed, then run from `app/`:
-
-```sh
-eas build:configure
-eas build --profile development --platform android
-# Or --platform ios, with Apple signing credentials and a registered device.
-```
-
-An Expo account and native signing setup are required. Install the resulting development build, then run `yarn start` from the repository root and open its Metro development URL on the phone. The checked-in EAS profile is for internal development only. Its local HTTP permission must not be used for a release build. Native config reads `DIRABL_ALLOW_LOCAL_HTTP`; changing it requires rebuilding, not just restarting Metro.
+References: [EAS internal distribution](https://docs.expo.dev/build/internal-distribution/), [iOS Developer Mode](https://docs.expo.dev/guides/ios-developer-mode/).
 
 ## Persistence smoke test
 
@@ -58,7 +68,7 @@ cp app/.env.example app/.env
 yarn server
 ```
 
-Server-only: `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-6-luna`), `PORT` (3001), `HOST` (loopback by default). For a physical phone, set `HOST` to the computer's private LAN IP and `EXPO_PUBLIC_SYNTHESIS_API_URL` in `app/.env` to `http://<that-IP>:3001`. Both devices must be on the same trusted network and the firewall must allow this port. Restart Metro after changing mobile environment variables. Never put an OpenAI key in `EXPO_PUBLIC_*` or the app.
+Server-only: `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-6-luna`), `PORT` (3001), `HOST` (loopback by default). For a physical phone, set `HOST` to the computer's private LAN IP and `EXPO_PUBLIC_SYNTHESIS_API_URL` in `app/.env` to `http://<that-IP>:3001`. Both devices must be on the same trusted network and the firewall must allow this port. Restart Metro after changing mobile environment variables for development builds; rebuild the preview app after changing its EAS build variables. Never put an OpenAI key in `EXPO_PUBLIC_*` or the app.
 
 The server calls Chat Completions with strict structured output and `store: false`, validates and normalizes the result, and does not log transcript/story text. `store: false` does not override provider retention policies. Manual synthesis asks for consent before sending transcript text.
 
