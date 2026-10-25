@@ -1,5 +1,7 @@
 node_modules/
 .npm-cache/
+.yarn/
+yarn-error.log
 .expo/
 dist/
 coverage/

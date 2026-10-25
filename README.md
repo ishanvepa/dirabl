@@ -4,38 +4,40 @@ An offline-first iOS/Android journal built with Expo Router, TypeScript and SQLi
 
 ## Development
 
-Use Node 22.16 or newer and npm. On Windows use `npm.cmd` / `npx.cmd` if PowerShell script execution is disabled.
+Use Node 22.16 or newer and Yarn Classic 1.22.22 (pinned in `package.json`). If Yarn is not installed, Node 22 ships Corepack: run `corepack enable`, then `corepack prepare yarn@1.22.22 --activate`. On Windows use `yarn.cmd` if PowerShell script execution is disabled.
 
 ```sh
-npm install
-npm run check
+yarn install --frozen-lockfile
+yarn run check
 cp app/.env.example app/.env
 # Edit the backend URL if using AI; DIRABL_ALLOW_LOCAL_HTTP=1 is only for development.
-npm run android -w app
+yarn workspace dirabl android
 # macOS + Xcode:
-npm run ios -w app
-npm start
+yarn workspace dirabl ios
+yarn start
 ```
 
 Native speech recognition requires an Expo **development build**, not Expo Go. Android development needs an Android SDK/JDK and an emulator or USB-debugging phone. iOS builds need macOS/Xcode or EAS Build. Prefer a real iOS 17+ / Android 13+ phone for speech acceptance tests.
 
+The repository uses Yarn workspaces and a single root `yarn.lock`; install from the repository root. Commit `yarn.lock` after dependency changes, and use `yarn install --frozen-lockfile` in CI/build verification. Run the full validation suite with `yarn run check`; Yarn Classic reserves bare `yarn check` for its own dependency check. Do not generate an npm lockfile alongside it.
+
 ### Quick preview in Expo Go
 
-From the repository root, run `npm run start:go` (or `npm.cmd run start:go` in PowerShell), then scan the QR code with your phone. Install an Expo Go version compatible with this project's Expo SDK 58. No custom native build is required for this mode.
+From the repository root, run `yarn start:go` (or `yarn.cmd start:go` in PowerShell), then scan the QR code with your phone. Install an Expo Go version compatible with this project's Expo SDK 58. No custom native build is required for this mode.
 
 Expo Go uses manual text entry. New Entry hides microphone/model-download/settings controls and explains that voice dictation requires the development build. Library, local persistence, transcript editing, consent and optional backend synthesis use the same code. No new dependencies or second app project are needed. The speech module is loaded only outside Expo Go.
 
-Expo Go and the standalone dirabl development app have separate journal storage. Custom native network settings do not change Expo Go; if synthesis cannot reach your local backend, verify LAN access and the host app's network permissions. Expo Go is a preview, not validation of native speech or release/offline cold-start behavior. Use `npm start` for the full development build.
+Expo Go and the standalone dirabl development app have separate journal storage. Custom native network settings do not change Expo Go; if synthesis cannot reach your local backend, verify LAN access and the host app's network permissions. Expo Go is a preview, not validation of native speech or release/offline cold-start behavior. Use `yarn start` for the full development build.
 
-For EAS on a machine without native build tools, run from `app/`:
+For EAS on a machine without native build tools, install the CLI with `yarn global add eas-cli` if needed, then run from `app/`:
 
 ```sh
-npx eas-cli build:configure
-npx eas-cli build --profile development --platform android
+eas build:configure
+eas build --profile development --platform android
 # Or --platform ios, with Apple signing credentials and a registered device.
 ```
 
-An Expo account and native signing setup are required. Install the resulting development build, then run `npm start` from the repository root and open its Metro development URL on the phone. The checked-in EAS profile is for internal development only. Its local HTTP permission must not be used for a release build. Native config reads `DIRABL_ALLOW_LOCAL_HTTP`; changing it requires rebuilding, not just restarting Metro.
+An Expo account and native signing setup are required. Install the resulting development build, then run `yarn start` from the repository root and open its Metro development URL on the phone. The checked-in EAS profile is for internal development only. Its local HTTP permission must not be used for a release build. Native config reads `DIRABL_ALLOW_LOCAL_HTTP`; changing it requires rebuilding, not just restarting Metro.
 
 ## Persistence smoke test
 
@@ -53,7 +55,7 @@ Post-MVP handwriting, writing-style personalization and backup/import are intent
 cp server/.env.example server/.env
 cp app/.env.example app/.env
 # Edit both files, then:
-npm run server
+yarn server
 ```
 
 Server-only: `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-6-luna`), `PORT` (3001), `HOST` (loopback by default). For a physical phone, set `HOST` to the computer's private LAN IP and `EXPO_PUBLIC_SYNTHESIS_API_URL` in `app/.env` to `http://<that-IP>:3001`. Both devices must be on the same trusted network and the firewall must allow this port. Restart Metro after changing mobile environment variables. Never put an OpenAI key in `EXPO_PUBLIC_*` or the app.
@@ -67,10 +69,10 @@ API behavior was verified with mocked OpenAI responses; no server API key was av
 ## Verification and remaining release work
 
 ```sh
-npm run check                  # app/server/test TypeScript, ESLint, Vitest
-npm run build -w server        # backend compilation
-npm exec -w app -- expo install --check
-npm exec -w app -- expo export --platform android --platform ios --output-dir dist
+yarn run check                                # app/server/test TypeScript, ESLint, Vitest
+yarn workspace dirabl-server build         # backend compilation
+yarn workspace dirabl expo install --check
+yarn workspace dirabl expo export --platform android --platform ios --output-dir dist
 ```
 
 Unit/integration tests use an actual SQLite engine (sql.js) and mocked native recognizer/OpenAI events. They exercise save/reopen, settings defaults, save-before-request, offline manual synthesis, auto eligibility, timeout/network/API errors, duplicate taps, mid-flight edits, stale response rejection and interrupted-request recovery. Both mobile Hermes bundles exported successfully. No physical-device or native binary build has been verified here; run every step in the device checklist before accepting the native MVP.
@@ -83,7 +85,7 @@ Before public release:
 - Run a real-key smoke test with the configured model and review provider privacy/retention disclosure.
 - Replace the development backend restriction with TLS, defensible client authentication/attestation, durable abuse limits and usage/spend controls.
 - Add and verify SQLCipher encryption with platform-backed keys; SQLite here is not separately encrypted.
-- Resolve upstream dependency advisories. After `npm audit fix`, npm reports 19 high-severity findings propagated through Expo/Metro tooling, rooted in `braces` ([advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)) and `node-forge` ([advisory](https://github.com/advisories/GHSA-86w9-cpqp-85rv)). npm's suggested forced fix downgrades Expo to SDK 44 and breaks the supported native dependency set; it was not applied. Keep development servers on trusted networks and re-audit before release.
+- Resolve upstream dependency advisories. The initial MVP audit (before the Yarn migration) reported high-severity findings propagated through Expo/Metro tooling, rooted in `braces` ([advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)) and `node-forge` ([advisory](https://github.com/advisories/GHSA-86w9-cpqp-85rv)). The suggested forced fix would downgrade Expo to SDK 44 and break the supported native dependency set, so it was not applied. Keep development servers on trusted networks and re-audit with `yarn audit` before release.
 
 The implementation stops at Phase 5. HandFonted, writing-style imitation, backup/import, accounts and sync are not implemented.
 

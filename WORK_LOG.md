@@ -50,3 +50,13 @@ Validation: npm run check passed (app/server/test TypeScript, ESLint and 26 test
 Android and iOS Hermes bundle exports also passed after the adapter changes.
 
 The root start:go command launched Metro successfully on port 8083 in an offline/CI smoke test, then was stopped. The sandbox blocked React Native DevTools' user-cache download, so Metro used its fallback DevTools; this did not prevent startup. Normal interactive use should omit CI/offline overrides.
+
+## Yarn migration — October 24, 2026
+
+Migrated the existing workspaces to Yarn Classic 1.22.22, matching the installed Yarn and pinning it in packageManager. Replaced package-lock.json with yarn.lock, added repository-local ignored cache configuration, switched workspace/test/preview scripts and README/device-test commands to Yarn, and added the server version required by Yarn Classic. Babel 7.29.7 and Vite 8.3.5 were previously installed implicitly by npm; they are now explicit development dependencies. TypeScript is pinned to its previous 6.0.3 version. App/server dependency versions were compared against the previous npm lockfile and remain unchanged. No application source or UX changed.
+
+Validation: Yarn install completed; a subsequent frozen offline install left yarn.lock unchanged. yarn run check passed app/server/test TypeScript checks, ESLint and all 26 tests across 8 files. The backend compiled, and both iOS and Android Hermes exports passed using Yarn workspace commands. Use yarn run check (bare yarn check is Yarn Classic's own command).
+
+The initial import required working around npm-workspace conversion and stalled native archive downloads. A temporary local mirror reused npm's cached tarballs and was removed after Yarn installation; it is not required by the checked-in configuration. Generated caches/logs remain ignored. Physical-device testing remains pending as previously documented.
+
+The Yarn Expo Go command also launched Metro on port 8083 and was stopped after the smoke test. As before, the sandbox denied the optional React Native DevTools user-cache download; Metro used its fallback debugger. No physical iPhone test was performed.

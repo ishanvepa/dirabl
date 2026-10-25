@@ -2,7 +2,7 @@
 
 ## Expo Go preview smoke test (pending)
 
-Run `npm run start:go`, scan its QR code using an SDK-compatible Expo Go app, and open New Entry. Confirm that the explanation appears with a text editor, no microphone/model-download/device-settings controls and no permission prompt. Type text, background/return and ensure it remains intact. Finish, open the saved entry from My Journal, edit/save its transcript and test manual synthesis with the configured backend. Reopen the same project to check persistence. Expo Go storage is separate from the installed dirabl development app. Then verify the development build still shows Start Dictating and passes the native tests below.
+Run `yarn start:go`, scan its QR code using an SDK-compatible Expo Go app, and open New Entry. Confirm that the explanation appears with a text editor, no microphone/model-download/device-settings controls and no permission prompt. Type text, background/return and ensure it remains intact. Finish, open the saved entry from My Journal, edit/save its transcript and test manual synthesis with the configured backend. Reopen the same project to check persistence. Expo Go storage is separate from the installed dirabl development app. Then verify the development build still shows Start Dictating and passes the native tests below.
 
 ## Native development build
 

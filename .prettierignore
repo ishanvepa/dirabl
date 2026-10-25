@@ -1,6 +1,7 @@
 node_modules
 .npm-cache
+.yarn
 **/.expo
 **/dist
-package-lock.json
+yarn.lock
 BUILD_PLAN.md

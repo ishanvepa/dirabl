@@ -9,13 +9,14 @@
     "typecheck": "tsc --noEmit -p app && tsc --noEmit -p server && tsc -p tsconfig.tests.json",
     "lint": "eslint app server shared tests",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run lint && npm test",
-    "start": "npm run start -w app",
-    "start:go": "npm run start:go -w app --",
-    "server": "npm run dev -w server",
+    "check": "yarn typecheck && yarn lint && yarn test",
+    "start": "yarn workspace dirabl start",
+    "start:go": "yarn workspace dirabl start:go",
+    "server": "yarn workspace dirabl-server dev",
     "format": "prettier --write app server shared tests *.json *.mjs README.md WORK_LOG.md docs/*.md"
   },
   "devDependencies": {
+    "@babel/core": "7.29.7",
     "@types/node": "^22.0.0",
     "@types/react": "^19.3.0",
     "@types/sql.js": "^1.4.11",
@@ -24,9 +25,11 @@
     "prettier": "^3.9.10",
     "sql.js": "^1.15.1",
     "supertest": "^7.3.1",
-    "typescript": "latest",
+    "typescript": "6.0.3",
     "typescript-eslint": "latest",
-    "vitest": "latest"
+    "vitest": "latest",
+    "vite": "8.3.5"
   },
-  "type": "module"
+  "type": "module",
+  "packageManager": "yarn@1.22.22"
 }
