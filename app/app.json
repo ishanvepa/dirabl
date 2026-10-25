@@ -24,6 +24,16 @@
           "speechRecognitionPermission": "Allow dirabl to transcribe speech on this device."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "fa209177-8c92-40e9-b7e6-bc7a2edd72d0"
+      }
+    }
   }
 }

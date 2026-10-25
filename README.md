@@ -2,6 +2,8 @@
 
 An offline-first iOS/Android journal built with Expo Router, TypeScript and SQLite. Speak using the phone's on-device recognizer or type. The original transcript remains the source of truth; optional cloud synthesis produces a separate story.
 
+See the [product, UX, and technical overview](docs/APP_OVERVIEW.md) for the implemented screens, user journeys, offline behavior, architecture, privacy, and build modes.
+
 ## Development
 
 Use Node 22.16 or newer and Yarn Classic 1.22.22 (pinned in `package.json`). If Yarn is not installed, Node 22 ships Corepack: run `corepack enable`, then `corepack prepare yarn@1.22.22 --activate`. On Windows use `yarn.cmd` if PowerShell script execution is disabled.
@@ -74,7 +76,7 @@ The server calls Chat Completions with strict structured output and `store: fals
 
 This server is deliberately **local development only**: it binds to loopback/a private IP, caps requests at 6/minute/client and 100/day/process, disables SDK retries, and refuses `NODE_ENV=production`. These in-memory limits reset on restart and are not production authentication or spend controls. Do not port-forward or publish it. Public release requires TLS, authentication or attestation, durable per-user/global quotas and provider-side budget controls.
 
-API behavior was verified with mocked OpenAI responses; no server API key was available for a paid smoke test. Native acceptance steps are in [docs/DEVICE_TESTS.md](docs/DEVICE_TESTS.md).
+API behavior is covered by tests with mocked OpenAI responses. A live saved-entry synthesis flow was also verified on an Android emulator using an EAS development build. Native acceptance steps are in [docs/DEVICE_TESTS.md](docs/DEVICE_TESTS.md).
 
 ## Verification and remaining release work
 
@@ -85,14 +87,14 @@ yarn workspace dirabl expo install --check
 yarn workspace dirabl expo export --platform android --platform ios --output-dir dist
 ```
 
-Unit/integration tests use an actual SQLite engine (sql.js) and mocked native recognizer/OpenAI events. They exercise save/reopen, settings defaults, save-before-request, offline manual synthesis, auto eligibility, timeout/network/API errors, duplicate taps, mid-flight edits, stale response rejection and interrupted-request recovery. Both mobile Hermes bundles exported successfully. No physical-device or native binary build has been verified here; run every step in the device checklist before accepting the native MVP.
+Unit/integration tests use an actual SQLite engine (sql.js) and mocked native recognizer/OpenAI events. They exercise save/reopen, settings defaults, save-before-request, offline manual synthesis, auto eligibility, timeout/network/API errors, duplicate taps, mid-flight edits, stale response rejection and interrupted-request recovery. Both mobile Hermes bundles exported successfully. An EAS Android development APK was built and installed on an emulator, preserving saved entries, and a live synthesis retry succeeded. Physical-device acceptance remains pending; run every step in the device checklist before accepting the native MVP.
 
 Recording is foreground-only, en-US. Until Finish, text is held in memory; a force-kill can lose an unfinished entry. A stop timeout retains the latest interim text, which needs review. Consecutive identical native final events are deduplicated; test intentional repetitions on target devices. Library and saved entries work without a backend, account or internet. Journal content is plain text, never interpreted as HTML.
 
 Before public release:
 
 - Complete real iOS/Android microphone, offline-model, airplane-mode, long-dictation, accessibility and restart tests.
-- Run a real-key smoke test with the configured model and review provider privacy/retention disclosure.
+- Complete synthesis acceptance testing on physical devices and review provider privacy/retention disclosure.
 - Replace the development backend restriction with TLS, defensible client authentication/attestation, durable abuse limits and usage/spend controls.
 - Add and verify SQLCipher encryption with platform-backed keys; SQLite here is not separately encrypted.
 - Resolve upstream dependency advisories. The initial MVP audit (before the Yarn migration) reported high-severity findings propagated through Expo/Metro tooling, rooted in `braces` ([advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)) and `node-forge` ([advisory](https://github.com/advisories/GHSA-86w9-cpqp-85rv)). The suggested forced fix would downgrade Expo to SDK 44 and break the supported native dependency set, so it was not applied. Keep development servers on trusted networks and re-audit with `yarn audit` before release.
