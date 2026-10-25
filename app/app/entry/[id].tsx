@@ -1,21 +1,41 @@
-﻿import { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, Text, TextInput } from 'react-native';
-import { useFocusEffect, useLocalSearchParams, usePreventRemove } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams, usePreventRemove } from 'expo-router';
 import { randomUUID } from 'expo-crypto';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { useRepositories } from '../../src/services/database/context';
-import { type JournalEntry, statusText, isStale } from '../../src/types/journal';
-import { Body, Busy, Button, Heading, Notice, Screen, styles } from '../../src/components/ui';
+import { type JournalEntry, isStale } from '../../src/types/journal';
+import {
+  Body,
+  Busy,
+  Button,
+  Caption,
+  Header,
+  Heading,
+  Label,
+  Notice,
+  Pill,
+  ReadingText,
+  Screen,
+  TextButton,
+  colors,
+  fonts,
+  styles,
+} from '../../src/components/ui';
 import { createSynthesisClient } from '../../src/services/api/synthesisClient';
 import { SynthesisService } from '../../src/features/synthesis/SynthesisService';
-import { ensureConsent } from '../../src/features/synthesis/consent';
+import { useSynthesisConsent } from '../../src/features/synthesis/ConsentProvider';
+import { usePreferences } from '../../src/features/preferences/PreferencesProvider';
 import { consumeAutomaticTicket } from '../../src/features/journal/finishEntry';
 import { appearsOnline } from '../../src/services/connectivity';
+import { journalTimestamp } from '../../src/utils/dates';
+
 export default function Detail() {
   const { id } = useLocalSearchParams<{ id: string }>(),
     { journal, settings } = useRepositories();
-  const network = useNetInfo(),
-    online = appearsOnline(network);
+  const { preferredReadingView } = usePreferences(),
+    requestConsent = useSynthesisConsent();
+  const online = appearsOnline(useNetInfo());
   const service = useMemo(
     () =>
       new SynthesisService(
@@ -26,14 +46,14 @@ export default function Detail() {
     [journal],
   );
   const [entry, setEntry] = useState<JournalEntry | null>(null),
-    [loaded, setLoaded] = useState(false),
-    [error, setError] = useState(''),
+    [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false),
     [draft, setDraft] = useState(''),
     [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<'story' | 'transcript'>('transcript'),
-    initial = useRef(true),
+  const [tab, setTab] = useState<'story' | 'transcript'>('transcript');
+  const initial = useRef(true),
     running = useRef(false);
   const dirty = editing && draft !== entry?.rawTranscript;
   usePreventRemove(dirty, ({ repeat }) =>
@@ -55,41 +75,43 @@ export default function Detail() {
       setEntry(result);
       setError('');
       if (initial.current) {
-        setTab(result?.synthesizedStory ? 'story' : 'transcript');
+        setTab(
+          result?.synthesizedStory && preferredReadingView === 'story' ? 'story' : 'transcript',
+        );
         initial.current = false;
       }
       return result;
     } catch {
-      setError('Could not open your entry. Please retry.');
+      setError('Could not open your entry. Please try again.');
       return null;
     } finally {
       setLoaded(true);
     }
-  }, [id, journal]);
+  }, [id, journal, preferredReadingView]);
   const synthesize = useCallback(
     async (automatic = false) => {
       if (running.current) return;
       running.current = true;
-      setBusy(true);
       setError('');
       try {
         const allowed = automatic
           ? (await settings.get('consent')) && (await settings.get('autoSynthesis'))
-          : await ensureConsent(settings);
+          : await requestConsent();
         if (allowed) {
+          setBusy(true);
           const applied = await service.run(id);
-          if (applied) setTab('story');
+          if (applied) setTab(preferredReadingView);
           await load();
         }
       } catch (e) {
         await load();
-        setError(e instanceof Error ? e.message : 'Could not synthesize. Please retry.');
+        setError(e instanceof Error ? e.message : 'Could not synthesize. Please try again.');
       } finally {
         setBusy(false);
         running.current = false;
       }
     },
-    [id, load, service, settings],
+    [id, load, service, settings, requestConsent, preferredReadingView],
   );
   useFocusEffect(
     useCallback(() => {
@@ -107,6 +129,23 @@ export default function Detail() {
       };
     }, [id, load, synthesize]),
   );
+  function beginEdit() {
+    if (entry) {
+      setDraft(entry.rawTranscript);
+      setEditing(true);
+      setError('');
+    }
+  }
+  function cancelEdit() {
+    if (!dirty) {
+      setEditing(false);
+      return;
+    }
+    Alert.alert('Discard edits?', 'The saved transcript will be kept.', [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: () => setEditing(false) },
+    ]);
+  }
   async function saveEdit() {
     if (saving) return;
     setSaving(true);
@@ -116,107 +155,248 @@ export default function Detail() {
       setEditing(false);
       setTab('transcript');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save changes. Please retry.');
+      setError(e instanceof Error ? e.message : 'Could not save changes. Please try again.');
     } finally {
       setSaving(false);
     }
   }
+  function more() {
+    Alert.alert('Your entry', undefined, [
+      ...(!editing ? [{ text: 'Edit original transcript', onPress: beginEdit }] : []),
+      { text: 'Privacy & settings', onPress: () => router.push('/settings') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+  function back() {
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  }
+  const stale = !!entry && isStale(entry),
+    failed = entry?.synthesisStatus === 'synthesis_failed';
+  const canSynthesize = !!entry && (!entry.synthesizedStory || stale);
+  const failure = error || entry?.lastSynthesisError;
+  const footer =
+    entry &&
+    (editing ? (
+      <View style={[styles.row, { gap: 20 }]}>
+        <TextButton
+          title="Cancel edits"
+          onPress={cancelEdit}
+          disabled={saving}
+          style={{ fontSize: 14 }}
+        />
+        <Button
+          title="Save transcript"
+          style={{ flex: 1 }}
+          onPress={() => void saveEdit()}
+          loading={saving}
+          disabled={!draft.trim()}
+        />
+      </View>
+    ) : canSynthesize ? (
+      <>
+        {!failed && (
+          <Body style={{ fontSize: 11, lineHeight: 17 }}>
+            Optional: create a more readable story with AI
+          </Body>
+        )}
+        <Button
+          title={
+            busy
+              ? 'Creating your story…'
+              : failed
+                ? 'Retry synthesis'
+                : stale
+                  ? 'Update story   ↗'
+                  : 'Turn into a story   ↗'
+          }
+          disabled={!online || busy || entry.synthesisStatus === 'synthesizing'}
+          loading={busy}
+          onPress={() => void synthesize()}
+        />
+        <Caption>
+          {!online
+            ? 'Connect to the internet to create a story'
+            : failed
+              ? 'Needs an internet connection'
+              : 'Requires internet  ·  Your original stays unchanged'}
+        </Caption>
+      </>
+    ) : (
+      <View style={s.readyFooter}>
+        <Label>● STORY READY</Label>
+        <TextButton
+          title="Edit original   ↗"
+          onPress={beginEdit}
+          style={{ color: colors.ink, fontFamily: fonts.semibold, fontSize: 13 }}
+        />
+      </View>
+    ));
   return (
-    <Screen>
+    <Screen
+      header={<Header title="ENTRY" onBack={back} onMore={entry ? more : undefined} />}
+      footer={footer}
+      footerBorder={!editing}
+    >
       {!loaded ? (
         <Busy />
-      ) : entry ? (
+      ) : !entry ? (
+        <Notice>
+          {error || 'Entry not found.'}
+          <TextButton title="Try again" onPress={() => void load()} />
+        </Notice>
+      ) : editing ? (
         <>
-          <Heading>{entry.title || 'Untitled Entry'}</Heading>
-          <Text style={styles.muted}>{new Date(entry.createdAt).toLocaleString()}</Text>
-          {!!entry.tags.length && <Text style={styles.muted}>{entry.tags.join(' · ')}</Text>}
-          <Notice>{busy ? 'Synthesizing your entry…' : statusText[entry.synthesisStatus]}</Notice>
-          {isStale(entry) && (
-            <Notice>The story is from an earlier transcript. Synthesize again to update it.</Notice>
-          )}
-          {entry.synthesizedStory && (
-            <Button
-              title={tab === 'story' ? 'Story · Selected' : 'Story'}
-              onPress={() => setTab('story')}
-            />
-          )}
-          <Button
-            title={tab === 'transcript' ? 'Original Transcript · Selected' : 'Original Transcript'}
-            onPress={() => setTab('transcript')}
+          <Label style={{ color: colors.muted }}>EDIT ORIGINAL TRANSCRIPT</Label>
+          <Heading style={s.editHeading}>{'Every word is\nyours to change.'}</Heading>
+          <TextInput
+            accessibilityLabel="Edit original transcript"
+            multiline
+            editable={!saving}
+            style={s.editInput}
+            value={draft}
+            onChangeText={setDraft}
+            selectionColor={colors.forest}
           />
-          {editing ? (
-            <>
-              <TextInput
-                accessibilityLabel="Edit original transcript"
-                multiline
-                editable={!saving}
-                style={styles.input}
-                value={draft}
-                onChangeText={setDraft}
-              />
-              <Button
-                title="Save Transcript"
-                disabled={saving || !draft.trim()}
-                onPress={() => void saveEdit()}
-              />
-              <Button
-                title="Cancel Edits"
-                disabled={saving}
-                onPress={() => {
-                  if (!dirty) setEditing(false);
-                  else
-                    Alert.alert('Discard edits?', 'The saved transcript will be kept.', [
-                      { text: 'Keep editing', style: 'cancel' },
-                      { text: 'Discard', style: 'destructive', onPress: () => setEditing(false) },
-                    ]);
-                }}
-              />
-            </>
-          ) : (
-            <>
-              <Body>
-                {tab === 'story' && entry.synthesizedStory
-                  ? entry.synthesizedStory
-                  : entry.rawTranscript}
-              </Body>
-              <Button
-                title="Edit Original Transcript"
-                onPress={() => {
-                  setDraft(entry.rawTranscript);
-                  setEditing(true);
-                  setTab('transcript');
-                }}
-              />
-            </>
-          )}
-          {busy && <Busy />}
-          {!online && (
-            <Notice>
-              You’re offline. Your journal is available here. Synthesize manually when connected.
-            </Notice>
-          )}
-          {(!entry.synthesizedStory || isStale(entry)) && (
-            <Button
-              title={
-                entry.synthesisStatus === 'synthesis_failed'
-                  ? 'Retry Synthesis'
-                  : 'Synthesize Entry'
-              }
-              disabled={!online || busy || editing || entry.synthesisStatus === 'synthesizing'}
-              onPress={() => void synthesize()}
-            />
-          )}
-          {!!entry.lastSynthesisError && <Notice>{entry.lastSynthesisError}</Notice>}
+          <Body style={s.editHint}>
+            ⓘ Updating your transcript will make the current story out of date until you synthesize
+            again.
+          </Body>
+          {!!error && <Notice warning>{error}</Notice>}
         </>
       ) : (
-        <Notice>Entry not found.</Notice>
-      )}
-      {!!error && (
-        <Notice>
-          {error}
-          <Button title="Reload entry" onPress={() => void load()} />
-        </Notice>
+        <>
+          <Label style={{ color: colors.muted }}>{journalTimestamp(entry.createdAt)}</Label>
+          <Heading
+            style={[
+              s.title,
+              {
+                fontSize: entry.synthesizedStory ? 44 : 49,
+                lineHeight: entry.synthesizedStory ? 48 : 54,
+              },
+            ]}
+          >
+            {entry.title || 'Untitled entry'}
+          </Heading>
+          {!!entry.tags.length && (
+            <View style={s.tags}>
+              {entry.tags.map((tag) => (
+                <Pill key={tag}>{tag.toUpperCase()}</Pill>
+              ))}
+            </View>
+          )}
+          {busy || entry.synthesisStatus === 'synthesizing' ? (
+            <View style={s.status}>
+              <Notice title="◌  CREATING YOUR STORY">
+                <Body style={{ fontSize: 12 }}>
+                  Your original is saved. This can take a moment.
+                </Body>
+              </Notice>
+            </View>
+          ) : failed ? (
+            <Pressable
+              style={s.status}
+              accessibilityRole="button"
+              accessibilityLabel="Could not create a story. View error details."
+              disabled={!failure}
+              onPress={() => Alert.alert('Synthesis details', failure || '')}
+            >
+              <Notice
+                warning
+                title="○  COULDN’T CREATE A STORY"
+                style={{ minHeight: 121, padding: 18, gap: 18 }}
+              >
+                Your entry is still saved. You can try again whenever you’re ready.
+              </Notice>
+            </Pressable>
+          ) : !entry.synthesizedStory ? (
+            <View style={s.status}>
+              <Notice title="●  SAVED ON YOUR DEVICE" style={{ paddingVertical: 12, gap: 5 }}>
+                <Body style={{ fontSize: 12, lineHeight: 17 }}>
+                  Your words are safe, even without AI.
+                </Body>
+              </Notice>
+            </View>
+          ) : null}
+          {stale && (
+            <View style={s.status}>
+              <Notice title="YOUR STORY IS FROM AN EARLIER TRANSCRIPT">
+                Synthesize again to bring it up to date.
+              </Notice>
+            </View>
+          )}
+          <View accessibilityRole="tablist" style={s.tabs}>
+            {(['story', 'transcript'] as const).map((value) => (
+              <Pressable
+                key={value}
+                accessibilityRole="tab"
+                accessibilityLabel={value === 'story' ? 'Story' : 'Original transcript'}
+                accessibilityState={{
+                  selected: tab === value,
+                  disabled: value === 'story' && !entry.synthesizedStory,
+                }}
+                disabled={value === 'story' && !entry.synthesizedStory}
+                onPress={() => setTab(value)}
+                style={[s.tab, tab === value && s.selectedTab]}
+              >
+                <Text style={[s.tabText, tab === value && s.selectedTabText]}>
+                  {value === 'story' ? 'Story' : 'Original'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          {tab === 'story' ? (
+            <Body style={s.contentLabel}>A few thoughts from today</Body>
+          ) : (
+            <Label style={s.originalLabel}>ORIGINAL TRANSCRIPT</Label>
+          )}
+          <ReadingText style={s.entryText}>
+            {tab === 'story' && entry.synthesizedStory
+              ? entry.synthesizedStory
+              : entry.rawTranscript}
+          </ReadingText>
+          {!online && (
+            <Body style={{ marginTop: 24, fontSize: 12, lineHeight: 18 }}>
+              You’re offline. Your saved journal is available here.
+            </Body>
+          )}
+          {!!error && !failed && (
+            <View style={{ marginTop: 20 }}>
+              <Notice warning>{error}</Notice>
+            </View>
+          )}
+        </>
       )}
     </Screen>
   );
 }
+const s = StyleSheet.create({
+  title: { marginTop: 22 },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 20 },
+  status: { marginTop: 24 },
+  tabs: {
+    flexDirection: 'row',
+    padding: 5,
+    gap: 3,
+    backgroundColor: colors.quiet,
+    borderRadius: 16,
+    marginTop: 28,
+    minHeight: 54,
+  },
+  tab: { flex: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center', minHeight: 44 },
+  selectedTab: { backgroundColor: colors.surface },
+  tabText: { fontFamily: fonts.medium, fontSize: 12, lineHeight: 16, color: colors.muted },
+  selectedTabText: { fontFamily: fonts.semibold, color: colors.ink },
+  contentLabel: { fontFamily: fonts.medium, fontSize: 13, lineHeight: 18, marginTop: 28 },
+  originalLabel: { color: colors.muted, marginTop: 34 },
+  entryText: { marginTop: 24 },
+  readyFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 42,
+  },
+  editHeading: { fontSize: 43, lineHeight: 49, marginTop: 24 },
+  editInput: { ...styles.input, marginTop: 25, minHeight: 380, padding: 18 },
+  editHint: { fontSize: 11, lineHeight: 17, marginTop: 14 },
+});

@@ -1,5 +1,13 @@
 ﻿# Implementation checkpoints
 
+## Editorial Figma UI — October 25, 2026
+
+Implemented the main journal flow and first-run onboarding from the dirabl editorial Figma project. Bundled Instrument Serif, Newsreader, Inter, and the exported icons; rebuilt library, writing, reading, editing, settings, and consent surfaces with responsive native layouts. Added local name, initial reading view, and transactional onboarding completion. Existing journals skip first-run setup and can review it from Settings. Handwriting and reminders remain explicitly planned features.
+
+Validation: TypeScript and ESLint passed; all 29 tests across 8 files passed, including five new SQLite preference and onboarding tests. Android development-app visual checks covered the populated journal, entry reading/editing, settings, consent review, writing surface, and onboarding screens. All 18 icon renders passed dimension checks. Physical-device dictation and accessibility acceptance remain in the device checklist. See [the implementation notes](docs/FIGMA_IMPLEMENTATION.md).
+
+With explicit user approval, backed up and merged the original local journal and the journal used during design review. SQLite integrity passed; all three entries and the latest preferences were preserved. The app uses its normal `dirabl.db` database.
+
 ## Phase 1 — SQLite foundation (`cd49f0d`)
 
 Created Expo Router, a minimal warm UI, migration v1, parameterized repositories, persistent settings and a working manual creation/library/detail loop. SQLite tests serialize/reopen a real SQLite database via sql.js, preserve literal user text and verify defaults and revision protections.

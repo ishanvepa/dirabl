@@ -4,6 +4,8 @@ An offline-first iOS/Android journal built with Expo Router, TypeScript and SQLi
 
 See the [product, UX, and technical overview](docs/APP_OVERVIEW.md) for the implemented screens, user journeys, offline behavior, architecture, privacy, and build modes.
 
+The [Figma implementation notes](docs/FIGMA_IMPLEMENTATION.md) map the editorial UI and first-run onboarding to the source designs.
+
 ## Development
 
 Use Node 22.16 or newer and Yarn Classic 1.22.22 (pinned in `package.json`). If Yarn is not installed, Node 22 ships Corepack: run `corepack enable`, then `corepack prepare yarn@1.22.22 --activate`. On Windows use `yarn.cmd` if PowerShell script execution is disabled.
@@ -99,6 +101,6 @@ Before public release:
 - Add and verify SQLCipher encryption with platform-backed keys; SQLite here is not separately encrypted.
 - Resolve upstream dependency advisories. The initial MVP audit (before the Yarn migration) reported high-severity findings propagated through Expo/Metro tooling, rooted in `braces` ([advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)) and `node-forge` ([advisory](https://github.com/advisories/GHSA-86w9-cpqp-85rv)). The suggested forced fix would downgrade Expo to SDK 44 and break the supported native dependency set, so it was not applied. Keep development servers on trusted networks and re-audit with `yarn audit` before release.
 
-The implementation stops at Phase 5. HandFonted, writing-style imitation, backup/import, accounts and sync are not implemented.
+The editorial UI and first-run onboarding extend the Phase 5 MVP. Handwriting generation, writing-style imitation, reminders, backup/import, accounts and sync are not implemented.
 
 API implementation references: [Expo SQLite](https://docs.expo.dev/versions/latest/sdk/sqlite/), [expo-speech-recognition](https://github.com/jamsch/expo-speech-recognition), [OpenAI structured output](https://developers.openai.com/api/docs/guides/structured-outputs), [GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna).

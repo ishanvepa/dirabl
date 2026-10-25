@@ -27,6 +27,10 @@ export async function migrate(db: Database) {
       PRAGMA user_version = 1;
     `);
     });
+  // Existing journal owners can keep using the app when onboarding is introduced.
+  // An explicit completion choice is never overwritten.
+  await db.runAsync(`INSERT OR IGNORE INTO app_settings(key,value)
+    SELECT 'onboardingCompleted','true' WHERE EXISTS(SELECT 1 FROM journal_entries LIMIT 1)`);
   await db.runAsync(`UPDATE journal_entries SET synthesis_status='synthesis_failed',
     synthesis_attempt_id=NULL, last_synthesis_error='Synthesis was interrupted. Tap Retry.' WHERE synthesis_status='synthesizing'`);
 }

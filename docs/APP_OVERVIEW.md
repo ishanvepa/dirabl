@@ -1,6 +1,6 @@
 # dirabl: product, UX, and technical overview
 
-This document describes the implemented MVP as of October 24, 2026.
+This document describes the implemented MVP as of October 25, 2026.
 
 ## 1. What the app does
 
@@ -13,7 +13,7 @@ Each entry can contain two versions of the writing:
 
 The original transcript is the source of truth. Synthesis adds a story to the entry while preserving the transcript. Saving and reading journal entries work independently of the AI service.
 
-The app has no journal account or sign-in flow. Its journal database lives on the device.
+The app has no journal account or sign-in flow. Its journal database lives on the device. First-run onboarding introduces the journal and collects optional local preferences; the [Figma implementation notes](FIGMA_IMPLEMENTATION.md) describe the editorial UI and onboarding design.
 
 ## 2. Main user journey
 
@@ -44,12 +44,13 @@ An unsuccessful synthesis request leaves the saved transcript available for read
 
 ## 3. Screens and navigation
 
-| Screen             | Route         | Purpose                                                                   |
-| ------------------ | ------------- | ------------------------------------------------------------------------- |
-| My Journal         | `/`           | Browse saved entries and start a new entry.                               |
-| New Entry          | `/new`        | Dictate or type, then finish and save.                                    |
-| Journal Entry      | `/entry/[id]` | Read the transcript or story, edit the transcript, and request synthesis. |
-| Privacy & Settings | `/settings`   | Read the privacy disclosure and manage automatic synthesis and consent.   |
+| Screen               | Route         | Purpose                                                                                        |
+| -------------------- | ------------- | ---------------------------------------------------------------------------------------------- |
+| My Journal           | `/`           | Browse saved entries and start a new entry.                                                    |
+| New Entry            | `/new`        | Dictate or type, then finish and save.                                                         |
+| Journal Entry        | `/entry/[id]` | Read the transcript or story, edit the transcript, and request synthesis.                      |
+| Privacy & Settings   | `/settings`   | Read the privacy disclosure and manage automatic synthesis and consent.                        |
+| First-run onboarding | `/onboarding` | Set a local name, reading preference, and explicit AI choices before entering a fresh journal. |
 
 ### My Journal
 
@@ -75,7 +76,7 @@ Leaving an unfinished entry asks whether to keep writing or discard it. Unfinish
 
 The detail screen shows the title, creation timestamp, tags when available, and a synthesis status notice.
 
-**Story** and **Original Transcript** are full-width buttons that select the displayed version. A story is selected by default when one exists. An entry without a story opens on the transcript.
+**Story** and **Original** form a segmented control that selects the displayed version. The saved reading preference determines the initial view when a story exists. An entry without a story opens on the transcript.
 
 The screen offers **Synthesize Entry** or **Retry Synthesis** when the entry has no story or its story is stale. The action is disabled while offline, editing, or already synthesizing. Loading indicators and inline errors explain request progress and failure.
 
@@ -90,24 +91,24 @@ The settings screen explains what synthesis sends to the backend and OpenAI. It 
 - An action to turn off automatic synthesis and reset consent.
 - A disclosure about local SQLite storage and its encryption limitations.
 
-Consent and automatic-synthesis preferences are stored locally.
+Consent and automatic-synthesis preferences are stored locally. Settings also includes an optional journal name, the preferred reading view, and a link to review onboarding. Fresh journals start with automatic synthesis off; existing journals retain their data when onboarding is introduced.
 
 ## 4. Visual and interaction design
 
-The interface uses a warm paper background, dark text, green action buttons, and light neutral notices. It uses system fonts and simple stacked layouts.
+The interface follows the editorial Figma concept with a warm canvas, dark text, forest-green cards, lime actions, and light neutral notices. Instrument Serif supplies headings, Newsreader supplies journal text, and Inter supplies controls and metadata. The fonts and design icons are bundled locally.
 
-| Element         | Current treatment                                          |
-| --------------- | ---------------------------------------------------------- |
-| Background      | Warm paper, `#FBF7EF`.                                     |
-| Main text       | Dark ink, `#292C26`.                                       |
-| Secondary text  | Muted gray-green, `#63665C`.                               |
-| Primary actions | Green, `#37654C`, with white text.                         |
-| Borders         | Light neutral, `#D8D8C9`.                                  |
-| Notices         | Pale neutral background, `#EFEFE3`.                        |
-| Headings        | Size 30, semibold.                                         |
-| Body text       | Size 17, with line height 26.                              |
-| Buttons         | Full-width layout, rounded corners, and minimum height 50. |
-| Screen layout   | Scrollable content with padding 24 and spacing 16.         |
+| Element         | Current treatment                                                                        |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| Background      | Warm canvas, `#F8F8F2`.                                                                  |
+| Main text       | Dark ink, `#1B241D`.                                                                     |
+| Secondary text  | Muted gray-green, `#73786F`.                                                             |
+| Primary actions | Lime, `#D5FA72`, with dark text; dark primary actions use white text.                    |
+| Borders         | Light neutral, `#DEE1D8`.                                                                |
+| Notices         | Soft green, `#EEF4E6`, or quiet neutral, `#F2F3EA`.                                      |
+| Headings        | Instrument Serif, generally size 41-55 depending on the screen.                          |
+| Body text       | Newsreader for journal text, generally size 20 with line height 29; Inter for UI copy.   |
+| Buttons         | Rounded corners and minimum height 56.                                                   |
+| Screen layout   | Scrollable content with horizontal padding 24 and fixed action footers where applicable. |
 
 Shared components provide consistent headings, body text, buttons, notices, and loading indicators. Screens use keyboard avoidance; editable fields and important controls have accessibility labels. Notices and interim transcription use polite live announcements where configured. Library cards expose button semantics.
 
@@ -254,7 +255,7 @@ The `journal_entries` table stores:
 - Synthesis status, model identifier, and the last synthesis error.
 - The transcript revision, synthesized revision, and active attempt identifier.
 
-The `app_settings` table stores consent and automatic-synthesis preferences. SQL statements use bound parameters. The library orders entries by creation time, and timestamps are displayed in the device's local format.
+The `app_settings` table stores consent, automatic synthesis, the local display name, the preferred reading view, and onboarding completion. SQL statements use bound parameters. The library orders entries by creation time, and timestamps are displayed in the device's local format.
 
 Journal text is plain text rather than rendered HTML. The app sandbox protects access to its files, but dirabl does not add database encryption. There is no app-level backup, export, import, or synchronization feature.
 
