@@ -2,6 +2,7 @@ export interface Availability {
   available: boolean;
   reason?: string;
   canDownloadModel?: boolean;
+  manualOnly?: boolean;
 }
 export interface SpeechSnapshot {
   committedText: string;

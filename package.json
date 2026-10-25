@@ -11,6 +11,7 @@
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm test",
     "start": "npm run start -w app",
+    "start:go": "npm run start:go -w app --",
     "server": "npm run dev -w server",
     "format": "prettier --write app server shared tests *.json *.mjs README.md WORK_LOG.md docs/*.md"
   },

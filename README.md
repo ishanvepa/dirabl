@@ -19,6 +19,14 @@ npm start
 
 Native speech recognition requires an Expo **development build**, not Expo Go. Android development needs an Android SDK/JDK and an emulator or USB-debugging phone. iOS builds need macOS/Xcode or EAS Build. Prefer a real iOS 17+ / Android 13+ phone for speech acceptance tests.
 
+### Quick preview in Expo Go
+
+From the repository root, run `npm run start:go` (or `npm.cmd run start:go` in PowerShell), then scan the QR code with your phone. Install an Expo Go version compatible with this project's Expo SDK 58. No custom native build is required for this mode.
+
+Expo Go uses manual text entry. New Entry hides microphone/model-download/settings controls and explains that voice dictation requires the development build. Library, local persistence, transcript editing, consent and optional backend synthesis use the same code. No new dependencies or second app project are needed. The speech module is loaded only outside Expo Go.
+
+Expo Go and the standalone dirabl development app have separate journal storage. Custom native network settings do not change Expo Go; if synthesis cannot reach your local backend, verify LAN access and the host app's network permissions. Expo Go is a preview, not validation of native speech or release/offline cold-start behavior. Use `npm start` for the full development build.
+
 For EAS on a machine without native build tools, run from `app/`:
 
 ```sh
